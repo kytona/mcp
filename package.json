@@ -1,0 +1,37 @@
+{
+  "name": "@sentiment402/mcp-adapter",
+  "version": "0.1.0",
+  "description": "Sentiment402 MCP server (stdio) that proxies the public Sentiment402 HTTP API and relays x402 payment requirements.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "sentiment402-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "test:mcp": "tsx scripts/test-mcp-x402.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.24.3",
+    "@x402/core": "^2.0.0",
+    "@x402/evm": "^2.0.0",
+    "viem": "^2.39.3",
+    "zod": "3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.4",
+    "dotenv": "^16.6.1",
+    "tsx": "4.19.1",
+    "typescript": "5.5.4"
+  }
+}
