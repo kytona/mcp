@@ -1,23 +1,22 @@
 # Sentiment402 MCP Adapter (stdio)
 
-A thin MCP server that exposes Sentiment402 snapshot endpoints as MCP tools. It calls the public Sentiment402 HTTP API over HTTPS and relays x402 payment requirements when the API responds with `402 Payment Required`.
+A thin MCP server that exposes Sentiment402 snapshot endpoints as MCP tools. It calls the public Sentiment402 API over HTTPS and relays x402 payment requirements when the API responds with `402 Payment Required`.
 
 This adapter is intentionally stateless and contains no database credentials or admin headers. It is safe to run locally or package as a public MCP tool.
 
 ## Tool surface
 
-| Tool | HTTP endpoint | Description |
-| --- | --- | --- |
-| `get_global_snapshot` | `GET /{version}/snapshot/global` | Global market sentiment snapshot |
-| `get_crypto_pulse` | `GET /{version}/snapshot/crypto` | Crypto market sentiment pulse |
-| `get_tradfi_pulse` | `GET /{version}/snapshot/tradfi` | TradFi market sentiment pulse |
-| `get_asset_view` | `GET /{version}/snapshot/asset/:symbol` | Latest pulse for a specific asset |
+| Tool                  | HTTP endpoint                           | Description                       |
+| --------------------- | --------------------------------------- | --------------------------------- |
+| `get_global_snapshot` | `GET /v1/snapshot/global`        | Global market sentiment snapshot  |
+| `get_crypto_pulse`    | `GET /v1/snapshot/crypto`        | Crypto market sentiment pulse     |
+| `get_tradfi_pulse`    | `GET /v1/snapshot/tradfi`        | TradFi market sentiment pulse     |
+| `get_asset_view`      | `GET /v1/snapshot/asset/:symbol` | Latest pulse for a specific asset |
 
 ### Common inputs
 
 All tools accept the same optional query inputs (and `get_asset_view` additionally requires a `symbol`).
 
-- `version`: `v1` or `v2` (defaults to `v1`)
 - `format`: `full` or `compact_trading`
 - `fields`: comma-separated allowlist (only meaningful when `format=compact_trading`)
 - `symbol`: required for `get_asset_view`
@@ -73,8 +72,8 @@ Defaults:
 
 Environment variables:
 
-- `SENTIMENT402_USE_LOCALHOST` (optional) — set to `true` to use `http://localhost:8080`
-- `SENTIMENT402_API_VERSION` (optional) — `v1` or `v2` (default `v1`)
+- `SENTIMENT402_API_BASE_URL` (optional) — default `https://sentiment-api.kytona.com`
+- `SENTIMENT402_API_VERSION` (optional) — `v1` (default `v1`)
 - `SENTIMENT402_CACHE_TTL_MS` (optional) — cache TTL in ms (default `60000`)
 - `SENTIMENT402_USER_AGENT` (optional) — default `sentiment402-mcp/0.1.0`
 - `SENTIMENT402_X402_PRIVATE_KEY` (optional) — EVM private key for auto-paying x402 requests
@@ -101,7 +100,7 @@ pnpm dev
 To point at localhost:
 
 ```bash
-SENTIMENT402_USE_LOCALHOST=true pnpm dev
+SENTIMENT402_API_BASE_URL="http://localhost:8080" pnpm dev
 ```
 
 ## MCP host config example
@@ -113,22 +112,192 @@ Example for a stdio MCP host configuration:
   "command": "node",
   "args": ["/path/to/sentiment402/mcp/dist/index.js"],
   "env": {
+    "SENTIMENT402_API_BASE_URL": "https://sentiment-api.kytona.com",
     "SENTIMENT402_API_VERSION": "v1"
   }
 }
 ```
 
-To point at localhost:
+## Client Setup Instructions
+
+### Claude Desktop
+
+Claude Desktop supports MCP servers via stdio configuration.
+
+**Config file location:**
+
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+
+#### Option 1: Run from GitHub (Recommended)
+
+```json
+{
+  "mcpServers": {
+    "sentiment402": {
+      "command": "npx",
+      "args": ["-y", "github:kytona/mcp"],
+      "env": {
+        "SENTIMENT402_API_VERSION": "v1",
+        "SENTIMENT402_X402_PRIVATE_KEY": "your_evm_private_key_here"
+      }
+    }
+  }
+}
+```
+
+This automatically downloads and runs the latest version from GitHub.
+
+#### Option 2: Run from Local Clone
+
+1. Clone and build:
+
+   ```bash
+   git clone https://github.com/kytona/mcp.git
+   cd mcp
+   pnpm install
+   pnpm build
+   ```
+
+2. Configure Claude:
+
+   ```json
+   {
+     "mcpServers": {
+       "sentiment402": {
+         "command": "node",
+         "args": ["/absolute/path/to/mcp/dist/index.js"],
+        "env": {
+          "SENTIMENT402_API_VERSION": "v1",
+          "SENTIMENT402_X402_PRIVATE_KEY": "your_evm_private_key_here"
+        }
+       }
+     }
+   }
+   ```
+
+3. Restart Claude Desktop and look for the 🔌 icon to see available tools.
+
+**Resources:**
+
+- [Claude MCP Documentation](https://docs.anthropic.com/en/docs/model-context-protocol)
+- [Using Remote MCP Servers](https://support.claude.com/en/articles/11175166-getting-started-with-custom-connectors-using-remote-mcp)
+
+### ChatGPT Desktop
+
+ChatGPT supports MCP via Developer Mode (requires ChatGPT Plus).
+
+#### Setup Steps
+
+1. **Enable Developer Mode:**
+
+   - Open ChatGPT → **Settings**
+   - Go to **Apps & Connectors** → **Advanced settings**
+   - Enable **Developer mode**
+
+2. **Add MCP Server (NPX - Recommended):**
+
+   - In **Apps & Connectors**, click **Create**
+   - Enter:
+     - **Name**: `Sentiment402`
+     - **Command**: `npx`
+     - **Args**: `-y github:kytona/mcp`
+     - **Environment Variables**:
+       ```
+       SENTIMENT402_API_VERSION=v1
+       SENTIMENT402_X402_PRIVATE_KEY=your_evm_private_key_here
+       ```
+   - Check **I trust this application**
+   - Click **Create**
+
+3. **Use in Chat:**
+   - Click the **+** in the prompt field
+   - Go to **More** → **Developer mode**
+   - Enable the Sentiment402 connector
+
+#### Using Local Clone
+
+1. Clone and build as described above for Claude
+2. In ChatGPT Developer mode, configure:
+   - **Command**: `node`
+   - **Args**: `/absolute/path/to/mcp/dist/index.js`
+   - **Environment Variables**: Same as above
+
+**Resources:**
+
+- [ChatGPT MCP Integration](https://help.openai.com/en/articles/model-context-protocol)
+- [MCP Developer Documentation](https://modelcontextprotocol.io/)
+
+### Running on a Cloud Server
+
+To run the MCP server remotely and connect from Claude/ChatGPT:
+
+#### 1. Deploy to Cloud
+
+```bash
+# On your cloud server (AWS, DigitalOcean, etc.)
+git clone https://github.com/kytona/mcp.git
+cd mcp
+pnpm install
+pnpm build
+
+# Run with PM2 for persistence
+npm install -g pm2
+pm2 start dist/index.js --name sentiment402-mcp
+pm2 save
+pm2 startup
+```
+
+#### 2. Expose via ngrok (Development Only)
+
+```bash
+# Install ngrok: https://ngrok.com/download
+ngrok tcp 8000
+
+# Note the forwarding address: tcp://0.tcp.ngrok.io:12345
+```
+
+#### 3. Configure Client
+
+For Claude or ChatGPT, update the command to connect via TCP:
 
 ```json
 {
   "command": "node",
-  "args": ["/path/to/sentiment402/mcp/dist/index.js"],
-  "env": {
-    "SENTIMENT402_USE_LOCALHOST": "true"
+  "args": ["-e", "const net = require('net'); const client = net.connect({host: '0.tcp.ngrok.io', port: 12345}); process.stdin.pipe(client); client.pipe(process.stdout);"]
+}
+```
+
+**⚠️ Security Warning**: ngrok exposes your server publicly. For production, use:
+
+- VPN (Tailscale, WireGuard)
+- SSH tunneling
+- Proper authentication middleware
+
+**Resources:**
+
+- [Using ngrok with MCP](https://ngrok.com/docs/using-ngrok-with/using-mcp)
+- [MCP Security Best Practices](https://modelcontextprotocol.io/docs/security)
+
+### Other MCP Clients (Cline, etc.)
+
+For other MCP-compatible clients, use a similar stdio configuration:
+
+```json
+{
+  "mcpServers": {
+    "sentiment402": {
+      "command": "npx",
+      "args": ["-y", "github:kytona/mcp"],
+      "env": {
+        "SENTIMENT402_API_VERSION": "v1"
+      }
+    }
   }
 }
 ```
+
+Refer to your client's documentation for the exact config file location.
 
 ## Test script
 
@@ -142,7 +311,7 @@ pnpm test:mcp
 To point at localhost:
 
 ```bash
-SENTIMENT402_USE_LOCALHOST=true pnpm test:mcp
+SENTIMENT402_API_BASE_URL="http://localhost:8080" pnpm test:mcp
 ```
 
 Optional overrides:

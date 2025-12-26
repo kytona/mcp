@@ -1,9 +1,9 @@
-import { decodePaymentRequiredHeader, decodePaymentResponseHeader } from '@x402/core/http';
-import type { PaymentRequired } from '@x402/core/types';
+import { decodePaymentRequiredHeader, decodePaymentResponseHeader } from "@x402/core/http";
+import type { PaymentRequired } from "@x402/core/types";
 
-import type { X402PaymentClient } from './x402.js';
+import type { X402PaymentClient } from "./x402.js";
 export type PaymentRequiredResult = {
-  error: 'PAYMENT_REQUIRED';
+  error: "PAYMENT_REQUIRED";
   x402Version?: number;
   resource?: string;
   accepts?: Array<{
@@ -23,17 +23,14 @@ export type FetchResult = FetchOkResult | { ok: false; paymentRequired: PaymentR
 type PaymentRequiredLike = PaymentRequired & { accepts: Array<Record<string, unknown>> };
 
 function formatPaymentRequirements(payload: PaymentRequiredLike): PaymentRequiredResult {
-  const resourceUrl =
-    payload.resource && typeof payload.resource === 'object' && 'url' in payload.resource
-      ? (payload.resource as { url: string }).url
-      : undefined;
+  const resourceUrl = payload.resource && typeof payload.resource === "object" && "url" in payload.resource ? (payload.resource as { url: string }).url : undefined;
 
   return {
-    error: 'PAYMENT_REQUIRED',
+    error: "PAYMENT_REQUIRED",
     x402Version: payload.x402Version,
     resource: resourceUrl,
     accepts: payload.accepts.map((option) => {
-      const amount = 'maxAmountRequired' in option ? option.maxAmountRequired : option.amount;
+      const amount = "maxAmountRequired" in option ? option.maxAmountRequired : option.amount;
       return {
         scheme: option.scheme as string,
         network: option.network as string,
@@ -50,8 +47,7 @@ async function parsePaymentRequiredResponse(response: Response): Promise<{
   rawHeader?: string;
   details?: unknown;
 }> {
-  const rawHeader =
-    response.headers.get('PAYMENT-REQUIRED') ?? response.headers.get('X-PAYMENT-REQUIRED') ?? undefined;
+  const rawHeader = response.headers.get("PAYMENT-REQUIRED") ?? response.headers.get("X-PAYMENT-REQUIRED") ?? undefined;
 
   if (rawHeader) {
     try {
@@ -62,24 +58,16 @@ async function parsePaymentRequiredResponse(response: Response): Promise<{
   }
 
   const details = await response.json().catch(() => undefined);
-  const paymentRequired =
-    details && typeof details === 'object' && 'x402Version' in details
-      ? (details as PaymentRequired)
-      : null;
+  const paymentRequired = details && typeof details === "object" && "x402Version" in details ? (details as PaymentRequired) : null;
 
   return { paymentRequired, rawHeader, details };
 }
 
-async function tryAutoPay(options: {
-  paymentClient: X402PaymentClient;
-  paymentRequired: PaymentRequired;
-  url: URL;
-  userAgent: string;
-}): Promise<FetchOkResult | null> {
+async function tryAutoPay(options: { paymentClient: X402PaymentClient; paymentRequired: PaymentRequired; url: URL; userAgent: string }): Promise<FetchOkResult | null> {
   console.log(
     JSON.stringify(
       {
-        event: 'x402_payment_attempt',
+        event: "x402_payment_attempt",
         x402Version: options.paymentRequired.x402Version,
         resource: options.paymentRequired.resource?.url,
         accepts: options.paymentRequired.accepts?.map((accept) => ({
@@ -95,15 +83,13 @@ async function tryAutoPay(options: {
     )
   );
 
-  const paymentPayload = await options.paymentClient.httpClient.createPaymentPayload(
-    options.paymentRequired
-  );
+  const paymentPayload = await options.paymentClient.httpClient.createPaymentPayload(options.paymentRequired);
   const paymentHeaders = options.paymentClient.httpClient.encodePaymentSignatureHeader(paymentPayload);
 
   const response = await fetch(options.url, {
     headers: {
-      accept: 'application/json',
-      'user-agent': options.userAgent,
+      accept: "application/json",
+      "user-agent": options.userAgent,
       ...paymentHeaders,
     },
   });
@@ -113,19 +99,18 @@ async function tryAutoPay(options: {
   }
 
   if (!response.ok) {
-    const text = await response.text().catch(() => '');
+    const text = await response.text().catch(() => "");
     throw new Error(`API error (${response.status}): ${text}`);
   }
 
-  const paymentResponseHeader =
-    response.headers.get('PAYMENT-RESPONSE') ?? response.headers.get('X-PAYMENT-RESPONSE');
+  const paymentResponseHeader = response.headers.get("PAYMENT-RESPONSE") ?? response.headers.get("X-PAYMENT-RESPONSE");
   if (paymentResponseHeader) {
     try {
       const decoded = decodePaymentResponseHeader(paymentResponseHeader);
       console.log(
         JSON.stringify(
           {
-            event: 'x402_payment_settled',
+            event: "x402_payment_settled",
             transaction: decoded.transaction,
             payer: decoded.payer,
             network: decoded.network,
@@ -138,7 +123,7 @@ async function tryAutoPay(options: {
       console.log(
         JSON.stringify(
           {
-            event: 'x402_payment_settled',
+            event: "x402_payment_settled",
             rawHeader: paymentResponseHeader,
           },
           null,
@@ -151,15 +136,11 @@ async function tryAutoPay(options: {
   return { ok: true, json: await response.json() };
 }
 
-export async function fetchJsonWith402Handling(options: {
-  url: URL;
-  userAgent: string;
-  paymentClient?: X402PaymentClient | null;
-}): Promise<FetchResult> {
+export async function fetchJsonWith402Handling(options: { url: URL; userAgent: string; paymentClient?: X402PaymentClient | null }): Promise<FetchResult> {
   const response = await fetch(options.url, {
     headers: {
-      accept: 'application/json',
-      'user-agent': options.userAgent,
+      accept: "application/json",
+      "user-agent": options.userAgent,
     },
   });
 
@@ -170,7 +151,7 @@ export async function fetchJsonWith402Handling(options: {
       console.log(
         JSON.stringify(
           {
-            event: 'x402_payment_required',
+            event: "x402_payment_required",
             x402Version: paymentRequired.x402Version,
             resource: paymentRequired.resource?.url,
             accepts: paymentRequired.accepts?.map((accept) => ({
@@ -202,10 +183,10 @@ export async function fetchJsonWith402Handling(options: {
           ok: false,
           paymentRequired: {
             ...(formatPaymentRequirements(paymentRequired as PaymentRequiredLike) ?? {
-              error: 'PAYMENT_REQUIRED',
+              error: "PAYMENT_REQUIRED",
             }),
             rawHeader,
-            details: { reason: 'AUTO_PAY_FAILED', message: failureDetails },
+            details: { reason: "AUTO_PAY_FAILED", message: failureDetails },
           },
         };
       }
@@ -218,11 +199,11 @@ export async function fetchJsonWith402Handling(options: {
       };
     }
 
-    return { ok: false, paymentRequired: { error: 'PAYMENT_REQUIRED', rawHeader, details } };
+    return { ok: false, paymentRequired: { error: "PAYMENT_REQUIRED", rawHeader, details } };
   }
 
   if (!response.ok) {
-    const text = await response.text().catch(() => '');
+    const text = await response.text().catch(() => "");
     throw new Error(`API error (${response.status}): ${text}`);
   }
 

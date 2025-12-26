@@ -4,8 +4,7 @@ import { config as loadEnv } from "dotenv";
 
 loadEnv();
 
-const useLocalhost = process.env.SENTIMENT402_USE_LOCALHOST === "true";
-const apiBaseUrl = useLocalhost ? "http://localhost:8080" : "https://sentiment-api.kytona.com";
+const apiBaseUrl = process.env.SENTIMENT402_API_BASE_URL ?? "https://sentiment-api.kytona.com";
 const maxPayment = process.env.SENTIMENT402_X402_MAX_PAYMENT ?? "100000";
 const toolName = process.env.SENTIMENT402_MCP_TOOL ?? "get_global_snapshot";
 const toolArgsRaw = process.env.SENTIMENT402_MCP_TOOL_ARGS ?? "{}";
@@ -29,15 +28,13 @@ if (!paymentKey) {
 }
 
 const serverEnv: Record<string, string> = {
+  SENTIMENT402_API_BASE_URL: apiBaseUrl,
   SENTIMENT402_API_VERSION: process.env.SENTIMENT402_API_VERSION ?? "v1",
   SENTIMENT402_CACHE_TTL_MS: process.env.SENTIMENT402_CACHE_TTL_MS ?? "60000",
   SENTIMENT402_USER_AGENT: process.env.SENTIMENT402_USER_AGENT ?? "sentiment402-mcp/0.1.0",
   SENTIMENT402_X402_MAX_PAYMENT: maxPayment,
   SENTIMENT402_X402_PRIVATE_KEY: paymentKey,
 };
-if (useLocalhost) {
-  serverEnv.SENTIMENT402_USE_LOCALHOST = "true";
-}
 
 async function main() {
   console.log("================================================================================");

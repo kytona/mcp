@@ -2,12 +2,12 @@ import { z } from 'zod';
 
 const envSchema = z
   .object({
+    SENTIMENT402_API_BASE_URL: z.string().url().default('https://sentiment-api.kytona.com'),
     SENTIMENT402_API_VERSION: z.enum(['v1', 'v2']).default('v1'),
     SENTIMENT402_CACHE_TTL_MS: z.coerce.number().int().positive().default(60_000),
     SENTIMENT402_USER_AGENT: z.string().default('sentiment402-mcp/0.1.0'),
     SENTIMENT402_X402_PRIVATE_KEY: z.string().optional(),
     SENTIMENT402_X402_MAX_PAYMENT: z.string().optional(),
-    SENTIMENT402_USE_LOCALHOST: z.coerce.boolean().default(false),
   })
   .passthrough();
 
@@ -23,11 +23,8 @@ export type McpAdapterConfig = {
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): McpAdapterConfig {
   const parsed = envSchema.safeParse(env);
   if (parsed.success) {
-    const apiBaseUrl = parsed.data.SENTIMENT402_USE_LOCALHOST
-      ? 'http://localhost:8080'
-      : 'https://sentiment-api.kytona.com';
     return {
-      apiBaseUrl,
+      apiBaseUrl: parsed.data.SENTIMENT402_API_BASE_URL,
       apiVersion: parsed.data.SENTIMENT402_API_VERSION,
       cacheTtlMs: parsed.data.SENTIMENT402_CACHE_TTL_MS,
       userAgent: parsed.data.SENTIMENT402_USER_AGENT,
