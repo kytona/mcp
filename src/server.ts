@@ -25,8 +25,8 @@ const assetQuerySchema = snapshotQuerySchema.extend({
 });
 
 function buildSnapshotUrl(config: McpAdapterConfig, path: string, query?: SnapshotQuery): URL {
-  const version = query?.version ?? config.SENTIMENT402_API_VERSION;
-  const url = new URL(`/${version}${path}`, config.SENTIMENT402_API_BASE_URL);
+  const version = query?.version ?? config.apiVersion;
+  const url = new URL(`/${version}${path}`, config.apiBaseUrl);
 
   if (query?.format) url.searchParams.set('format', query.format);
   if (query?.fields) url.searchParams.set('fields', query.fields);
@@ -40,7 +40,7 @@ export function createSentiment402McpServer(config: McpAdapterConfig) {
     version: '0.1.0',
   });
 
-  const cache = new TtlCache<unknown>(config.SENTIMENT402_CACHE_TTL_MS);
+  const cache = new TtlCache<unknown>(config.cacheTtlMs);
   const paymentClient = createX402PaymentClient(config);
 
   const toToolResponse = (payload: unknown) => ({
@@ -56,7 +56,7 @@ export function createSentiment402McpServer(config: McpAdapterConfig) {
 
     const result = await fetchJsonWith402Handling({
       url,
-      userAgent: config.SENTIMENT402_USER_AGENT,
+      userAgent: config.userAgent,
       paymentClient,
     });
     if (!result.ok) {

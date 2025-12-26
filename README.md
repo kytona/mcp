@@ -17,7 +17,7 @@ This adapter is intentionally stateless and contains no database credentials or 
 
 All tools accept the same optional query inputs (and `get_asset_view` additionally requires a `symbol`).
 
-- `version`: `v1` or `v2` (defaults to `SENTIMENT402_API_VERSION`)
+- `version`: `v1` or `v2` (defaults to `v1`)
 - `format`: `full` or `compact_trading`
 - `fields`: comma-separated allowlist (only meaningful when `format=compact_trading`)
 - `symbol`: required for `get_asset_view`
@@ -41,7 +41,7 @@ Example payload (truncated):
 {
   "error": "PAYMENT_REQUIRED",
   "x402Version": 1,
-  "resource": "https://api.sentiment402.com/v1/snapshot/global",
+  "resource": "https://sentiment-api.kytona.com/v1/snapshot/global",
   "accepts": [
     {
       "scheme": "exact",
@@ -66,9 +66,14 @@ A small in-memory cache is used to reduce repeated requests.
 
 ## Configuration
 
+Defaults:
+
+- API base URL: `https://sentiment-api.kytona.com`
+- API version: `v1`
+
 Environment variables:
 
-- `SENTIMENT402_API_BASE_URL` (required) — e.g. `https://your-api-domain.com`
+- `SENTIMENT402_USE_LOCALHOST` (optional) — set to `true` to use `http://localhost:8080`
 - `SENTIMENT402_API_VERSION` (optional) — `v1` or `v2` (default `v1`)
 - `SENTIMENT402_CACHE_TTL_MS` (optional) — cache TTL in ms (default `60000`)
 - `SENTIMENT402_USER_AGENT` (optional) — default `sentiment402-mcp/0.1.0`
@@ -84,13 +89,19 @@ Build and start:
 ```bash
 pnpm install
 pnpm build
-SENTIMENT402_API_BASE_URL="https://…" pnpm start
+pnpm start
 ```
 
 You can also run directly in dev mode:
 
 ```bash
-SENTIMENT402_API_BASE_URL="https://…" pnpm dev
+pnpm dev
+```
+
+To point at localhost:
+
+```bash
+SENTIMENT402_USE_LOCALHOST=true pnpm dev
 ```
 
 ## MCP host config example
@@ -102,8 +113,19 @@ Example for a stdio MCP host configuration:
   "command": "node",
   "args": ["/path/to/sentiment402/mcp/dist/index.js"],
   "env": {
-    "SENTIMENT402_API_BASE_URL": "https://api.sentiment402.com",
     "SENTIMENT402_API_VERSION": "v1"
+  }
+}
+```
+
+To point at localhost:
+
+```json
+{
+  "command": "node",
+  "args": ["/path/to/sentiment402/mcp/dist/index.js"],
+  "env": {
+    "SENTIMENT402_USE_LOCALHOST": "true"
   }
 }
 ```
@@ -114,7 +136,13 @@ The repo includes a stdio test runner that calls a tool and prints the response.
 
 ```bash
 pnpm build
-SENTIMENT402_API_BASE_URL="https://…" pnpm test:mcp
+pnpm test:mcp
+```
+
+To point at localhost:
+
+```bash
+SENTIMENT402_USE_LOCALHOST=true pnpm test:mcp
 ```
 
 Optional overrides:
@@ -122,6 +150,10 @@ Optional overrides:
 - `SENTIMENT402_MCP_TOOL` (default `get_global_snapshot`)
 - `SENTIMENT402_MCP_TOOL_ARGS` (JSON string)
 - `SENTIMENT402_MCP_SERVER_CMD` / `SENTIMENT402_MCP_SERVER_ARGS` to customize the server process
+
+## License
+
+MIT. See `LICENSE`.
 
 ## Safety notes
 

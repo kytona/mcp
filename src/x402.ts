@@ -46,12 +46,12 @@ function buildMaxPaymentPolicy(maxPayment: bigint): PaymentPolicy {
 }
 
 export function createX402PaymentClient(config: McpAdapterConfig): X402PaymentClient | null {
-  const privateKey = config.SENTIMENT402_X402_PRIVATE_KEY;
+  const privateKey = config.x402PrivateKey;
   if (!privateKey) return null;
 
   const signer = privateKeyToAccount(normalizePrivateKey(privateKey));
   const client = new x402Client();
-  const maxPayment = parseMaxPayment(config.SENTIMENT402_X402_MAX_PAYMENT);
+  const maxPayment = parseMaxPayment(config.x402MaxPayment);
 
   registerExactEvmScheme(client, {
     signer,
